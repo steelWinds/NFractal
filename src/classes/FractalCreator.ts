@@ -1,6 +1,7 @@
 import type {IFractalCreator} from '@/interfaces/IFractalCreator';
 import type {ICanvasHelper, ICanvasItem} from 'ninja-canvashelper';
 import type {ILSystem2D} from '@/interfaces/ILSystem2D';
+
 import {CanvasHelper} from 'ninja-canvashelper';
 import NotCreated from '@/errors/NotCreated';
 import LSystem2D from '@/classes/LSystem2D';

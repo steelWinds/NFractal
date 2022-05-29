@@ -13,7 +13,7 @@ interface IFractalCreator {
     },
   ): ICanvasItem;
 
-  get LSystem2D(): ILSystem2D | Error;
+  get LSystem2D(): ILSystem2D | null;
 }
 
 export type {IFractalCreator};
