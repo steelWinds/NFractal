@@ -1,18 +1,24 @@
 import type {ICanvasItem} from 'ninja-canvashelper';
 import type {ILSystem2D} from '@/interfaces/ILSystem2D';
 import type {ITurtlePoint} from '@/interfaces/ITurtlePoint';
+import type {ILSystemCmdUnit} from '@/interfaces/ILSystemCmdUnit';
 
 import TurtlePoint from './TurtlePoint';
 import range from 'lodash-es/range';
 import {useRadians} from '@/helpers/math/useRadians';
+import LSystemCmdUnit from './LSystemCmdUnit';
+
+type LSystemRules =
+  Array<[string, string | { template: RegExp, fn: Function }]>;
 
 class LSystem2D implements ILSystem2D {
   #lCommand: string;
   #turtleMoveStack: Array<{x: number, y: number, rotate: number}>;
+  #lCommandsUnits?: ILSystemCmdUnit[];
   #canvasInstance?: ICanvasItem;
   #canvasContext?: CanvasRenderingContext2D | null;
   #turtlePoint?: ITurtlePoint;
-  #lRules?: Array<[string, string]>;
+  #lRules?: LSystemRules;
 
   constructor() {
     this.#lCommand = '';
@@ -22,18 +28,49 @@ class LSystem2D implements ILSystem2D {
   #setLCommand(command: string, iterations: number): void {
     if (!this.#lRules) return;
 
-    this.#lCommand = command;
+    console.log(this.#lRules);
+
+    let strCommand = command;
+
+    const opa = (fn: Function, m: string) => {
+      const params = m.match(/(\d+(?:\.\d+)?)/g)?.map(Number);
+
+      if (!params || !params.length) {
+        return '';
+      };
+
+      return fn.apply(this, params);
+    };
 
     range(iterations).forEach(() => {
-      this.#lRules?.map(([char, rule]) => {
-        this.#lCommand = this.#lCommand!.replaceAll(
+      this.#lRules?.forEach(([char, rule]) => {
+        if (typeof rule === 'object') {
+          console.log(1);
+
+          strCommand = strCommand.replaceAll(
+            rule.template,
+            opa.bind(this, rule.fn),
+          );
+
+          return;
+        }
+
+        strCommand = strCommand.replaceAll(
           char,
           rule.toLocaleLowerCase(),
         );
+
+        return;
       });
 
-      this.#lCommand = this.#lCommand?.toLocaleUpperCase();
+      strCommand = strCommand.toLocaleUpperCase();
+
+      this.#lCommandsUnits = [...strCommand].map((cmd) => {
+        return new LSystemCmdUnit(cmd);
+      });
     });
+
+    console.log(strCommand);
   }
 
   #drawByCommand(len: number, angle: number): void {
@@ -89,15 +126,27 @@ class LSystem2D implements ILSystem2D {
   }
 
   public setLRules(
-    rules: Array<[string, string]> | {[axiom: string]: string},
+    rules: Array<[string, string | Function]>,
   ): void {
-    if (Array.isArray(rules)) {
-      this.#lRules = rules;
+    const parseRules: LSystemRules = rules.map(
+      ([key, rule]: [string, string | Function]) => {
+        if (typeof rule === 'function') {
+          let reTemplate = key;
 
-      return;
-    }
+          reTemplate = reTemplate.replace('(', '\\(');
+          reTemplate = reTemplate.replace(')', '\\)');
 
-    this.#lRules = Object.entries(rules);
+          reTemplate = reTemplate.replace(/([a-z])/g, '(\\d+(?:\\.\\d+)?)');
+
+          return [key, {template: new RegExp(reTemplate, 'g'), fn: rule}];
+        }
+
+        return [key, rule];
+      });
+
+    console.log(parseRules);
+
+    this.#lRules = parseRules;
   }
 
   public draw(

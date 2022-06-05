@@ -4,9 +4,9 @@ class LSystemCmdUnit implements ILSystemCmdUnit {
   #cmdChar: ILSystemCmdUnit['cmdChar'];
   #cmdParams: ILSystemCmdUnit['cmdParams'];
 
-  constructor(char: string, params: [number[]]) {
+  constructor(char: string, params?: [number[]]) {
     this.#cmdChar = char;
-    this.#cmdParams = params;
+    this.#cmdParams = params ?? [];
   }
 
   get cmdChar(): ILSystemCmdUnit['cmdChar'] {

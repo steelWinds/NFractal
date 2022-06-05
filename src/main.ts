@@ -15,18 +15,17 @@ const ls = cre.LSystem2D!;
 
 ls.setLRules(
   [
-    ['F', 'FF-[-F+F+F]+[+F-F-F]'],
+    ['A(x, y)', (x) => `F(${x + 1})+A(${x + 1}, ${x})`],
   ],
 );
 
 ls.draw(
-  'F',
+  'F(1)+A(1.2, 2)',
   5,
   {
     startPoints: [600, 900],
     lenSegments: 20,
     angleSegments: 45,
-    speed: -2,
     startAngle: -90,
     iSize: 1,
     color: 'black',

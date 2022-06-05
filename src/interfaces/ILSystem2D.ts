@@ -2,7 +2,7 @@ import type {ICanvasItem} from 'ninja-canvashelper';
 
 interface ILSystem2D {
   setLRules(
-    rules: Array<[string, string]> | {[axiom: string]: string},
+    rules: Array<[string, string | Function]>,
   ): void
 
   setCanvasInstance(canvasItem: ICanvasItem): ILSystem2D;
