@@ -1,19 +1,31 @@
 import type {ILSystemCmdUnit} from '@/interfaces/ILSystemCmdUnit';
 
+import re from '@/helpers/regexp/r_list';
+
 class LSystemCmdUnit implements ILSystemCmdUnit {
-  #cmdChar: ILSystemCmdUnit['cmdChar'];
-  #cmdParams: ILSystemCmdUnit['cmdParams'];
+  #cmd: ILSystemCmdUnit['char'];
+  #cmdParams?: ILSystemCmdUnit['params'];
 
-  constructor(char: string, params?: [number[]]) {
-    this.#cmdChar = char;
-    this.#cmdParams = params ?? [];
+  constructor(char: string) {
+    [this.#cmd, this.#cmdParams] = this.#separateCmdParams(char);
   }
 
-  get cmdChar(): ILSystemCmdUnit['cmdChar'] {
-    return this.#cmdChar;
+  #separateCmdParams(char: string): [string, number[]] {
+    const cmdChar = char.match(re.LSystemCharCmd)?.[0];
+    const cmdParams = char.match(re.Numbers)?.map(Number);
+
+    if (!cmdChar || !cmdParams?.length) {
+      return [char, []];
+    }
+
+    return [cmdChar, cmdParams];
   }
 
-  get cmdParams(): ILSystemCmdUnit['cmdParams'] {
+  get char(): ILSystemCmdUnit['char'] {
+    return this.#cmd;
+  }
+
+  get params(): ILSystemCmdUnit['params'] {
     return this.#cmdParams;
   }
 }

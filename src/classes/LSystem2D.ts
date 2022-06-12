@@ -6,6 +6,8 @@ import type {ILSystemCmdUnit} from '@/interfaces/ILSystemCmdUnit';
 import TurtlePoint from './TurtlePoint';
 import range from 'lodash-es/range';
 import {useRadians} from '@/helpers/math/useRadians';
+import {useLSystemParams} from '@/helpers/string/useLSystemParams';
+import re from '@/helpers/regexp/r_list';
 import LSystemCmdUnit from './LSystemCmdUnit';
 
 type LSystemRules =
@@ -28,19 +30,7 @@ class LSystem2D implements ILSystem2D {
   #setLCommand(command: string, iterations: number): void {
     if (!this.#lRules) return;
 
-    console.log(this.#lRules);
-
     let strCommand = command;
-
-    const opa = (fn: Function, m: string) => {
-      const params = m.match(/(\d+(?:\.\d+)?)/g)?.map(Number);
-
-      if (!params || !params.length) {
-        return '';
-      };
-
-      return fn.apply(this, params);
-    };
 
     range(iterations).forEach(() => {
       this.#lRules?.forEach(([char, rule]) => {
@@ -49,7 +39,7 @@ class LSystem2D implements ILSystem2D {
 
           strCommand = strCommand.replaceAll(
             rule.template,
-            opa.bind(this, rule.fn),
+            useLSystemParams.bind(this, rule.fn),
           );
 
           return;
@@ -65,26 +55,38 @@ class LSystem2D implements ILSystem2D {
 
       strCommand = strCommand.toLocaleUpperCase();
 
-      this.#lCommandsUnits = [...strCommand].map((cmd) => {
+      this.#lCommandsUnits = strCommand.match(re.LSystemExp)?.map((cmd) => {
         return new LSystemCmdUnit(cmd);
       });
     });
 
     console.log(strCommand);
+    console.log(this.#lCommandsUnits);
   }
 
   #drawByCommand(len: number, angle: number): void {
-    if (!this.#canvasContext || !this.#turtlePoint) {
+    if (!this.#canvasContext || !this.#turtlePoint || !this.#lCommandsUnits) {
       return;
     }
 
     const turtle = this.#turtlePoint;
 
-    for (const char of this.#lCommand!) {
-      const xMove = turtle.coords.x + len * Math.cos(useRadians(turtle.rotate));
-      const yMove = turtle.coords.y + len * Math.sin(useRadians(turtle.rotate));
+    for (const unit of this.#lCommandsUnits) {
+      let lenFactor = 1;
 
-      switch (char) {
+      if (unit?.params) {
+        lenFactor = unit.params[0];
+      }
+
+      console.log(lenFactor);
+
+      const xMove =
+      turtle.coords.x + (len * lenFactor) * Math.cos(useRadians(turtle.rotate));
+      const yMove =
+      turtle.coords.y + (len * lenFactor) * Math.sin(useRadians(turtle.rotate));
+
+
+      switch (unit.char) {
       case 'F':
         this.#canvasContext.lineTo(xMove, yMove);
 
@@ -143,8 +145,6 @@ class LSystem2D implements ILSystem2D {
 
         return [key, rule];
       });
-
-    console.log(parseRules);
 
     this.#lRules = parseRules;
   }

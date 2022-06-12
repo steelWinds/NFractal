@@ -1,6 +1,6 @@
 interface ILSystemCmdUnit {
-  get cmdChar(): string;
-  get cmdParams(): [number[]];
+  get char(): string;
+  get params(): number[] | null | undefined;
 }
 
 export type {ILSystemCmdUnit};
