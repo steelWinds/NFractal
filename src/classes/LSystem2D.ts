@@ -1,30 +1,84 @@
 import type {ICanvasItem} from 'ninja-canvashelper';
-import type {ILSystem2D} from '@/interfaces/ILSystem2D';
+import type {
+  ILSystem2D,
+  LSystemCmdFunctions,
+  LFunctionParams,
+  LSystemRuleUnit,
+  LSystemRules,
+  DrawParams,
+} from '@/interfaces/ILSystem2D';
 import type {ITurtlePoint} from '@/interfaces/ITurtlePoint';
 import type {ILSystemCmdUnit} from '@/interfaces/ILSystemCmdUnit';
+import type {CoordsList} from '@/helpers/types/Canvas';
+import type {DrawLineParams} from '@/helpers/canvas/useDrawLineSegment';
 
 import TurtlePoint from './TurtlePoint';
 import range from 'lodash-es/range';
 import {useRadians} from '@/helpers/math/useRadians';
+import {useSelectByChance} from '@/helpers/math/useSelectByChance';
 import {useLSystemParams} from '@/helpers/string/useLSystemParams';
+import {useAnimateByFrames} from '@/helpers/canvas/useAnimateByFrames';
+import {useDrawLineSegment} from '@/helpers/canvas/useDrawLineSegment';
 import re from '@/helpers/regexp/r_list';
 import LSystemCmdUnit from './LSystemCmdUnit';
 
-type LSystemRules =
-  Array<[string, string | { template: RegExp, fn: Function }]>;
-
 class LSystem2D implements ILSystem2D {
-  #lCommand: string;
-  #turtleMoveStack: Array<{x: number, y: number, rotate: number}>;
+  #coordsList: CoordsList;
+  #turtlePoint: ITurtlePoint;
+  #onlySetCoords?: boolean;
   #lCommandsUnits?: ILSystemCmdUnit[];
   #canvasInstance?: ICanvasItem;
   #canvasContext?: CanvasRenderingContext2D | null;
-  #turtlePoint?: ITurtlePoint;
+  #lCmdFunctions?: LSystemCmdFunctions;
   #lRules?: LSystemRules;
 
   constructor() {
-    this.#lCommand = '';
-    this.#turtleMoveStack = [];
+    this.#coordsList = [];
+    this.#turtlePoint = new TurtlePoint();
+  }
+
+  #drawLine(options: DrawLineParams): void {
+    this.#coordsList.push(options.coords);
+
+    if (this.#onlySetCoords) {
+      this.#turtlePoint.setPosition(options.coords.x, options.coords.y);
+      this.#turtlePoint.setRotate(
+        options.coords?.rotate ?? this.#turtlePoint.rotate,
+      );
+
+      return;
+    }
+
+    useDrawLineSegment(options);
+  }
+
+  #applyParamsFunction(
+    unit: ILSystemCmdUnit,
+    {xRotate, yRotate, len, angle, onNonParams = () => null}: {
+      xRotate: number,
+      yRotate: number,
+      len: number,
+      angle: number,
+      onNonParams?: () => void,
+    },
+  ) {
+    if (!this.#lCmdFunctions?.has(unit.char) || !unit?.params) {
+      onNonParams();
+
+      return;
+    }
+
+    this.#lCmdFunctions.get(unit.char)?.(
+      {
+        ctx: this.#canvasContext,
+        drawLine: this.#drawLine.bind(this),
+        turtle: this.#turtlePoint,
+        rotates: {x: xRotate, y: yRotate},
+        len,
+        angle,
+        params: unit.params,
+      },
+    );
   }
 
   #setLCommand(command: string, iterations: number): void {
@@ -34,21 +88,24 @@ class LSystem2D implements ILSystem2D {
 
     range(iterations).forEach(() => {
       this.#lRules?.forEach(([char, rule]) => {
-        if (typeof rule === 'object') {
-          console.log(1);
+        if (typeof rule === 'string') {
+          strCommand = strCommand.replaceAll(
+            char,
+            rule.toLocaleLowerCase(),
+          );
+        } else if (Array.isArray(rule)) {
+          const selectRule = useSelectByChance(rule);
 
+          strCommand = strCommand.replaceAll(
+            char,
+            selectRule.rule.toLocaleLowerCase(),
+          );
+        } else if (rule?.fn && rule?.template) {
           strCommand = strCommand.replaceAll(
             rule.template,
             useLSystemParams.bind(this, rule.fn),
           );
-
-          return;
         }
-
-        strCommand = strCommand.replaceAll(
-          char,
-          rule.toLocaleLowerCase(),
-        );
 
         return;
       });
@@ -59,88 +116,161 @@ class LSystem2D implements ILSystem2D {
         return new LSystemCmdUnit(cmd);
       });
     });
-
-    console.log(strCommand);
-    console.log(this.#lCommandsUnits);
   }
 
   #drawByCommand(len: number, angle: number): void {
-    if (!this.#canvasContext || !this.#turtlePoint || !this.#lCommandsUnits) {
+    if (!this.#canvasContext || !this.#lCommandsUnits) {
       return;
     }
 
-    const turtle = this.#turtlePoint;
-
     for (const unit of this.#lCommandsUnits) {
-      let lenFactor = 1;
+      const xRotate = Math.cos(useRadians(this.#turtlePoint.rotate));
+      const yRotate = Math.sin(useRadians(this.#turtlePoint.rotate));
 
-      if (unit?.params) {
-        lenFactor = unit.params[0];
-      }
-
-      console.log(lenFactor);
-
-      const xMove =
-      turtle.coords.x + (len * lenFactor) * Math.cos(useRadians(turtle.rotate));
-      const yMove =
-      turtle.coords.y + (len * lenFactor) * Math.sin(useRadians(turtle.rotate));
-
+      const x = this.#turtlePoint.coords.x + len * xRotate;
+      const y = this.#turtlePoint.coords.y + len * yRotate;
 
       switch (unit.char) {
-      case 'F':
-        this.#canvasContext.lineTo(xMove, yMove);
-
-        turtle.setPosition(xMove, yMove);
+      case 'F': {
+        this.#applyParamsFunction(
+          unit,
+          {
+            xRotate,
+            yRotate,
+            len,
+            angle,
+            onNonParams: () => {
+              this.#drawLine({
+                ctx: this.#canvasContext,
+                coords: {x, y},
+                styleFn: (coords) => {
+                  this.#turtlePoint.setPosition(coords.x, coords.y);
+                },
+              });
+            },
+          },
+        );
         break;
+      }
 
-      case '+':
-        turtle.rotate += angle;
+      case 'A': {
+        this.#applyParamsFunction(
+          unit,
+          {
+            xRotate,
+            yRotate,
+            len,
+            angle,
+          },
+        );
         break;
+      }
 
-      case '-':
-        turtle.rotate -= angle;
+      case '+': {
+        this.#applyParamsFunction(
+          unit,
+          {
+            xRotate,
+            yRotate,
+            len,
+            angle,
+            onNonParams: () => {
+              this.#turtlePoint.setRotate(this.#turtlePoint.rotate + angle);
+            },
+          },
+        );
         break;
+      }
 
-      case '[':
-        this.#turtleMoveStack.push({
-          x: turtle.coords.x,
-          y: turtle.coords.y,
-          rotate: turtle.rotate,
+      case '-': {
+        this.#applyParamsFunction(
+          unit,
+          {
+            xRotate,
+            yRotate,
+            len,
+            angle,
+            onNonParams: () => {
+              this.#turtlePoint.setRotate(this.#turtlePoint.rotate - angle);
+            },
+          },
+        );
+        break;
+      }
+
+      case '[': {
+        this.#turtlePoint.setMovePoint({
+          x: this.#turtlePoint.coords.x,
+          y: this.#turtlePoint.coords.y,
+          rotate: this.#turtlePoint.rotate,
         });
         break;
+      }
 
-      case ']':
-        const lastPos = this.#turtleMoveStack.pop();
+      case ']': {
+        const lastPos = this.#turtlePoint.moveStack.pop();
 
         if (!lastPos) {
           return;
         }
 
-        const {x, y, rotate} = lastPos;
+        const {x: xLast, y: yLast, rotate} = lastPos;
 
-        this.#canvasContext.moveTo(x, y);
-
-        turtle.setPosition(x, y);
-        turtle.rotate = rotate;
+        this.#drawLine({
+          ctx: this.#canvasContext,
+          coords: {x: xLast, y: yLast, rotate, move: true},
+          styleFn: (coords) => {
+            this.#turtlePoint.setPosition(coords.x, coords.y);
+            this.#turtlePoint.setRotate(
+              coords?.rotate ?? this.#turtlePoint.rotate,
+            );
+          },
+        });
         break;
       }
+      }
+
+      this.#canvasContext.stroke();
     }
   }
 
+  #animate(framerate: number) {
+    useAnimateByFrames(this.#coordsList, framerate, (x, y, rotate, move) => {
+      if (!this.#canvasContext) {
+        return;
+      }
+
+      this.#onlySetCoords = false;
+
+      this.#drawLine({
+        ctx: this.#canvasContext,
+        coords: {x, y, rotate, move},
+      });
+    });
+  }
+
+  public setLCommandFunctions(
+    fnMap: [string, (obj: LFunctionParams) => void][],
+  ): void {
+    this.#lCmdFunctions = new Map(fnMap);
+  }
+
   public setLRules(
-    rules: Array<[string, string | Function]>,
+    rules: LSystemRuleUnit,
   ): void {
     const parseRules: LSystemRules = rules.map(
-      ([key, rule]: [string, string | Function]) => {
+      ([key, rule]: LSystemRuleUnit[1]) => {
+        let reTemplate = key;
+
+        reTemplate = reTemplate.replace('(', '\\(');
+        reTemplate = reTemplate.replace(')', '\\)');
+        reTemplate = reTemplate.replace('+', '\\+');
+        reTemplate = reTemplate.replace('-', '\\-');
+
         if (typeof rule === 'function') {
-          let reTemplate = key;
-
-          reTemplate = reTemplate.replace('(', '\\(');
-          reTemplate = reTemplate.replace(')', '\\)');
-
           reTemplate = reTemplate.replace(/([a-z])/g, '(\\d+(?:\\.\\d+)?)');
 
-          return [key, {template: new RegExp(reTemplate, 'g'), fn: rule}];
+          return [key, {template: new RegExp(reTemplate, 'gi'), fn: rule}];
         }
 
         return [key, rule];
@@ -149,59 +279,48 @@ class LSystem2D implements ILSystem2D {
     this.#lRules = parseRules;
   }
 
-  public draw(
-    lCommand: string,
-    iterations: number,
-    {
-      lenSegments,
-      angleSegments,
-      startPoints,
-      startAngle,
-      iSize,
-      color,
-      cap,
-    }:
-    {
-      lenSegments: number,
-      angleSegments: number,
-      startPoints?: [number, number],
-      startAngle?: number,
-      iSize?: number,
-      speed?: number,
-      color?: string,
-      cap?: 'butt' | 'round' | 'square'
-    },
-  ): void {
+  public draw(options: DrawParams): void {
     if (!this.#turtlePoint || !this.#canvasContext || !this.#canvasInstance) {
       return;
     }
 
-    const ctx = this.#canvasContext;
+    const {
+      fractal,
+      line,
+      coords,
+      animate,
+    } = options;
 
-    ctx.lineCap = cap ?? 'butt';
-    ctx.lineWidth = iSize ?? 1;
-    ctx.strokeStyle = color ?? '#000';
+    this.#onlySetCoords = Boolean(animate);
 
-    if (startPoints) {
-      this.#turtlePoint.setPosition(...startPoints);
-    }
+    this.#canvasContext.lineCap = line?.cap ?? 'butt';
+    this.#canvasContext.lineWidth = line?.iSize ?? 1;
+    this.#canvasContext.strokeStyle = line?.color ?? '#000';
 
-    this.#turtlePoint.rotate = startAngle ?? 0;
+    this.#turtlePoint.setPosition(
+      coords?.startPoints?.[0] ?? 0,
+      coords?.startPoints?.[1] ?? 0,
+    );
+    this.#turtlePoint.setRotate(coords?.startAngle ?? 0);
 
-    ctx.save();
+    this.#canvasContext.save();
 
-    ctx.beginPath();
-    ctx.moveTo(
+    this.#canvasContext.beginPath();
+    this.#canvasContext.moveTo(
       this.#turtlePoint.coords.x,
       this.#turtlePoint.coords.y,
     );
 
-    this.#setLCommand(lCommand, iterations);
-    this.#drawByCommand(lenSegments, angleSegments);
+    this.#setLCommand(fractal.axiom, fractal.iterations);
+    this.#drawByCommand(fractal.lenSegments, fractal.angleSegments);
 
     this.#canvasContext.stroke();
 
-    ctx.restore();
+    if (animate) {
+      this.#animate(animate.framerate);
+    }
+
+    this.#canvasContext.restore();
   }
 
   public setCanvasInstance(
@@ -209,7 +328,6 @@ class LSystem2D implements ILSystem2D {
   ): ReturnType<ILSystem2D['setCanvasInstance']> {
     this.#canvasInstance = canvasItem;
     this.#canvasContext = this.#canvasInstance.context2D;
-    this.#turtlePoint = new TurtlePoint();
 
     return this;
   }

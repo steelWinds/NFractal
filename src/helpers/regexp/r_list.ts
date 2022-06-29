@@ -1,6 +1,6 @@
 const re = {
-  LSystemExp: new RegExp(/([A-Z](\((\b\d[\d,.\s]*\b)?\))?|\[|\]|\+|\-)/, 'gm'),
-  LSystemCharCmd: new RegExp(/([A-Z])/, 'gm'),
+  LSystemExp: new RegExp(/((.)(\((\b\d[\d,.\s]*\b)?\))?|\[|\]|\+|\-)/, 'gm'),
+  LSystemCharCmd: new RegExp(/(.)/, 'gm'),
   Numbers: new RegExp(/(\d+(?:\.\d+)?)/, 'gmi'),
 };
 

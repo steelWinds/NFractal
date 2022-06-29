@@ -7,7 +7,7 @@ const useLSystemParams = (fn: Function, m: string) => {
     return '';
   };
 
-  return fn?.(params);
+  return fn?.(...params);
 };
 
 export {useLSystemParams};
