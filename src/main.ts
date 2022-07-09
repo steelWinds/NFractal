@@ -6,7 +6,6 @@ const cv = globalThis.document.createElement('canvas');
 
 cv.width = 1100;
 cv.height = 1100;
-cv.classList.add('jopa');
 
 globalThis.document.body.append(cv);
 

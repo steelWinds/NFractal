@@ -8,7 +8,7 @@ specifiers:
   eslint: ^8.19.0
   eslint-config-google: ^0.14.0
   lodash-es: ^4.17.21
-  ninja-canvashelper: 0.1.0
+  ninja-canvashelper: 0.1.1
   ts-patch: ^2.0.1
   typescript: ^4.7.4
   typescript-transform-paths: ^3.3.1
@@ -21,7 +21,7 @@ dependencies:
   eslint: 8.19.0
   eslint-config-google: 0.14.0_eslint@8.19.0
   lodash-es: 4.17.21
-  ninja-canvashelper: 0.1.0_typescript@4.7.4
+  ninja-canvashelper: 0.1.1_typescript@4.7.4
 
 devDependencies:
   '@types/lodash-es': 4.17.6
@@ -1013,8 +1013,8 @@ packages:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
     dev: false
 
-  /ninja-canvashelper/0.1.0_typescript@4.7.4:
-    resolution: {integrity: sha512-BNTZ7OPO9dK65BbnCxVOHSoiVGILZjdlEBHUjisEXqADZ7h7v3+wLM+u1lUnn/98+lDo5432jp0lCLfmrSJuOg==}
+  /ninja-canvashelper/0.1.1_typescript@4.7.4:
+    resolution: {integrity: sha512-DEe8NUkkRAkMTjYj7Edj8moT07gK7rGG/Rqm6akirnHYHpj8oKt8HKAhzFqncXRvg3pL+h8Vpu1lMEZLocW2hQ==}
     dependencies:
       '@types/randomstring': 1.1.8
       '@typescript-eslint/eslint-plugin': 5.30.5_6zdoc3rn4mpiddqwhppni2mnnm

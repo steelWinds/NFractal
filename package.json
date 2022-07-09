@@ -23,6 +23,6 @@
     "eslint": "^8.19.0",
     "eslint-config-google": "^0.14.0",
     "lodash-es": "^4.17.21",
-    "ninja-canvashelper": "0.1.0"
+    "ninja-canvashelper": "0.1.1"
   }
 }
