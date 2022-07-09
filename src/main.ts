@@ -2,18 +2,23 @@ import FractalCreator from '@/classes/FractalCreator';
 // import {useGaussinRandom} from '@/helpers/math/useGaussinRandom';
 // import {useRadians} from '@/helpers/math/useRadians';
 
+const cv = globalThis.document.createElement('canvas');
+
+cv.width = 1100;
+cv.height = 1100;
+cv.classList.add('jopa');
+
+globalThis.document.body.append(cv);
+
 const creator = new FractalCreator();
 
-creator.initCanvas(
-  'canvas1',
-  {
-    iSize: 1200,
-    bSize: 1500,
-    parent: 'body',
-    styleClass: 'fractal',
+const ls = creator.use({
+  type: creator.LSystem2D,
+  canvas: {
+    id: 'canvas1',
+    el: cv,
   },
-);
-const ls = creator.LSystem2D;
+});
 
 ls.setLRules(
   [
@@ -25,7 +30,7 @@ ls.draw(
   {
     fractal: {
       axiom: 'F',
-      iterations: 3,
+      iterations: 1,
       lenSegments: 10,
       angleSegments: 35,
     },

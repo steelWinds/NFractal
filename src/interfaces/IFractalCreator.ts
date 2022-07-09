@@ -1,19 +1,42 @@
 import type {ICanvasItem} from 'ninja-canvashelper';
-import type {ILSystem2D} from '@/interfaces/ILSystem2D';
+import type {LSystem2DConstructor} from '@/classes/LSystem2D';
+
+// Params types
+type CanvasItemParams = {
+  id: string,
+  el?: HTMLCanvasElement | string,
+}
+
+type CanvasCreateParams = {
+  iSize: number,
+  bSize: number,
+  parentSelector?: string,
+  styleClass?: string,
+}
+
+type UseCreatorParams<T> = {
+  type: T,
+  canvas: CanvasItemParams,
+  canvasOptions?: CanvasCreateParams,
+}
 
 interface IFractalCreator {
+  LSystem2D: LSystem2DConstructor;
+
   initCanvas(
-    id: string,
-    options:
-    {
-      iSize: number,
-      bSize: number,
-      parent?: string,
-      styleClass?: string,
-    },
+    canvasOptions: CanvasItemParams,
+    options: CanvasCreateParams
   ): ICanvasItem;
 
-  get LSystem2D(): ILSystem2D | null;
+  use<T extends new (...args: any) => any>(
+    options: UseCreatorParams<T>
+  ): InstanceType<T>;
 }
 
 export type {IFractalCreator};
+
+export type {
+  CanvasCreateParams,
+  CanvasItemParams,
+  UseCreatorParams,
+};

@@ -22,19 +22,24 @@ import {useDrawLineSegment} from '@/helpers/canvas/useDrawLineSegment';
 import re from '@/helpers/regexp/r_list';
 import LSystemCmdUnit from './LSystemCmdUnit';
 
+type LSystem2DConstructor = typeof LSystem2D
+
 class LSystem2D implements ILSystem2D {
   #coordsList: CoordsList;
   #turtlePoint: ITurtlePoint;
+  #canvasInstance: ICanvasItem;
+  #canvasContext: CanvasRenderingContext2D;
   #onlySetCoords?: boolean;
   #lCommandsUnits?: ILSystemCmdUnit[];
-  #canvasInstance?: ICanvasItem;
-  #canvasContext?: CanvasRenderingContext2D | null;
   #lCmdFunctions?: LSystemCmdFunctions;
   #lRules?: LSystemRules;
 
-  constructor() {
+  constructor(canvasItem: ICanvasItem) {
     this.#coordsList = [];
     this.#turtlePoint = new TurtlePoint();
+
+    this.#canvasInstance = canvasItem;
+    this.#canvasContext = this.#canvasInstance.context2D!;
   }
 
   #drawLine(options: DrawLineParams): void {
@@ -322,15 +327,8 @@ class LSystem2D implements ILSystem2D {
 
     this.#canvasContext.restore();
   }
-
-  public setCanvasInstance(
-    canvasItem: ICanvasItem,
-  ): ReturnType<ILSystem2D['setCanvasInstance']> {
-    this.#canvasInstance = canvasItem;
-    this.#canvasContext = this.#canvasInstance.context2D;
-
-    return this;
-  }
 }
 
 export default LSystem2D;
+
+export type {LSystem2DConstructor};

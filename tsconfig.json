@@ -21,6 +21,8 @@
     "noImplicitReturns": true,
     "declaration": true,
     "declarationDir": "./types",
+    "experimentalDecorators": true,
+    "noImplicitAny": false,
     "emitDeclarationOnly": true,
     "allowJs": true,
     "outDir": "dist",

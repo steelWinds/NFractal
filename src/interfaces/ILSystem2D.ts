@@ -1,4 +1,3 @@
-import type {ICanvasItem} from 'ninja-canvashelper';
 import type {ITurtlePoint} from '@/interfaces/ITurtlePoint';
 import type {DrawLineParams} from '@/helpers/canvas/useDrawLineSegment';
 
@@ -69,8 +68,6 @@ interface ILSystem2D {
   setLRules(
     rules: LSystemRuleUnit,
   ): void
-
-  setCanvasInstance(canvasItem: ICanvasItem): ILSystem2D;
 
   draw(
     options: DrawParams

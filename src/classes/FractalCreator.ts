@@ -1,42 +1,50 @@
-import type {IFractalCreator} from '@/interfaces/IFractalCreator';
+import type {
+  IFractalCreator,
+  CanvasCreateParams,
+  CanvasItemParams,
+  UseCreatorParams,
+} from '@/interfaces/IFractalCreator';
 import type {ICanvasHelper, ICanvasItem} from 'ninja-canvashelper';
-import type {ILSystem2D} from '@/interfaces/ILSystem2D';
 
 import {CanvasHelper} from 'ninja-canvashelper';
-import NotCreated from '@/errors/NotCreated';
 import LSystem2D from '@/classes/LSystem2D';
 
 class FractalCreator implements IFractalCreator {
+  LSystem2D: IFractalCreator['LSystem2D'];
+
   #canvasHelper: ICanvasHelper;
-  #lSystem2D: ILSystem2D;
-  #canvasInstance?: ICanvasItem;
 
   constructor() {
     this.#canvasHelper = new CanvasHelper();
-    this.#lSystem2D = new LSystem2D();
+
+    this.LSystem2D = LSystem2D;
   }
 
   public initCanvas(
-    id: string,
-    options:
-    {
-      iSize: number,
-      bSize: number,
-      parent?: string,
-      styleClass?: string,
-    },
-  ): ReturnType<IFractalCreator['initCanvas']> {
-    this.#canvasInstance = this.#canvasHelper.createCanvasField(id, options);
+    canvasOptions: CanvasItemParams,
+    options?: CanvasCreateParams,
+  ): ReturnType<IFractalCreator['initCanvas']> | never {
+    const {id, el} = canvasOptions;
 
-    return this.#canvasInstance;
-  }
+    let canvasItem: ICanvasItem | null = null;
 
-  get LSystem2D(): IFractalCreator['LSystem2D'] {
-    if (!this.#canvasInstance) {
-      throw new NotCreated('Canvas instance was not created!');
+    if (el) {
+      canvasItem = this.#canvasHelper.addCanvasField(id, el);
+    } else if (options && id) {
+      canvasItem = this.#canvasHelper.createCanvasField(id, options);
+    } else {
+      canvasItem = <never>canvasItem;
     }
 
-    return this.#lSystem2D.setCanvasInstance(this.#canvasInstance);
+    return canvasItem;
+  }
+
+  public use<T extends new(...args: any) => any>(
+    options: UseCreatorParams<T>,
+  ): InstanceType<T> {
+    const {type: Type, canvas, canvasOptions} = options;
+
+    return new Type(this.initCanvas(canvas, canvasOptions));
   }
 }
 
